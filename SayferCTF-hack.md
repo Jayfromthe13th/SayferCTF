@@ -290,7 +290,7 @@ Utilize the initializer modifier correctly or ensure it's only called by the con
 Various functions (pause, unpause, setMaxDepositsPerUser, etc.)
 
 ### PoC:
-
+``` solidity 
 function testOwnerCanPauseAndDrainFunds() public {
 
     LiquidityPool pool = new LiquidityPool();
@@ -299,12 +299,15 @@ function testOwnerCanPauseAndDrainFunds() public {
     pool.withdrawOwner(100 ether); // Possible exploitation
 
 }
+```
 ### Description:
 The contract is highly centralized, giving the owner and admins excessive control, including the ability to pause the contract and withdraw funds.
 
-### Recommendation: Decentralize control or add safeguards against misuse.
+### Recommendation: 
+Decentralize control or add safeguards against misuse.
 
-### Resolution: Implement governance mechanisms or timelocks for critical functions.
+### Resolution: 
+Implement governance mechanisms or timelocks for critical functions.
 
 ## M-01: Unclear Liquidity Pool Mechanics
 
@@ -325,6 +328,7 @@ Implement reward distribution logic for liquidity providers.
 **Location:**: setWithdrawalCooldown and setWithdrawalWindow functions
 
 ### PoC:
+``` solidity 
 function testOwnerCanManipulateWithdrawalTimings() public {
 
     LiquidityPool pool = new LiquidityPool();
@@ -332,12 +336,15 @@ function testOwnerCanManipulateWithdrawalTimings() public {
     pool.setWithdrawalWindow(1 hour); // Restricting withdrawal window
 
 }
+```
+### Description: 
+Withdrawal parameters can be changed arbitrarily by the owner or admins, potentially leading to user funds being locked.
 
-### Description: Withdrawal parameters can be changed arbitrarily by the owner or admins, potentially leading to user funds being locked.
+### Recommendation: 
+Fix these parameters or restrict changes to certain conditions.
 
-### Recommendation: Fix these parameters or restrict changes to certain conditions.
-
-### Resolution: Implement a governance mechanism or timelock for modifying these parameters.
+### Resolution: 
+Implement a governance mechanism or timelock for modifying these parameters.
 
 LendingPool.sol
 
@@ -345,6 +352,7 @@ LendingPool.sol
 **Location:** Function borrow (Lines where interest rate calculation occurs)
 
 ### PoC:
+``` solidity 
 function testInterestCalculationWithDifferentDurations() public {
 
     uint256 borrowedAmount = 100 ether;
@@ -362,18 +370,22 @@ function testInterestCalculationWithDifferentDurations() public {
     assertEq(lendingPool.interestForDuration(borrowedAmount, 365 days), longTermInterest, "Incorrect long-term interest calculation");
 
 }
-### Description: The interest calculation within the borrow function is overly simplistic, applying a flat interest rate to the borrowed amount without considering the duration of the loan. This approach does not accurately reflect real-world lending scenarios where interest accrues over time.
+```
+### Description: 
+The interest calculation within the borrow function is overly simplistic, applying a flat interest rate to the borrowed amount without considering the duration of the loan. This approach does not accurately reflect real-world lending scenarios where interest accrues over time.
 
-### Recommendation: Implement a more dynamic interest calculation method that factors in the loan duration.
+### Recommendation: 
+Implement a more dynamic interest calculation method that factors in the loan duration.
 
-### Resolution: Modify the interest calculation in the borrow function to include time-based components, such as the number of days or months the loan is held.
+### Resolution: 
+Modify the interest calculation in the borrow function to include time-based components, such as the number of days or months the loan is held.
 
 ## M-01 Inadequate Loan Repayment Logic
 
 **Location:**Function repay (Lines handling repayment calculations)
 
 ### PoC:
-
+``` solidity 
 function testPartialRepayment() public {
 
     uint256 borrowedAmount = 100 ether;
@@ -388,18 +400,22 @@ function testPartialRepayment() public {
     assertEq(lendingPool.borrowBalance(borrower), expectedRemainingBalance, "Partial repayment logic failed");
 
 }
-Description: The current repay function does not separate the handling of the principal and interest components of a loan, leading to potential accounting inaccuracies, especially in partial repayment situations.
+```
+### Description: 
+The current repay function does not separate the handling of the principal and interest components of a loan, leading to potential accounting inaccuracies, especially in partial repayment situations.
 
-Recommendation: Separate the management of principal and interest in the loan repayment process.
+### Recommendation: 
+Separate the management of principal and interest in the loan repayment process.
 
-Resolution: Update the repay function to differentiate between principal and interest repayments and manage them separately.
+### Resolution: 
+Update the repay function to differentiate between principal and interest repayments and manage them separately.
 
-M-02 Collateralization Ratio and Bonus Interaction
+## M-02 Collateralization Ratio and Bonus Interaction
 
-Location: Function borrow (Lines performing collateralization checks)
+**Location:** Function borrow (Lines performing collateralization checks)
 
-PoC:
-
+### PoC:
+``` solidity 
 function testCollateralizationWithBonus() public {
 
     uint256 borrowAmount = 100 ether;
@@ -412,18 +428,22 @@ function testCollateralizationWithBonus() public {
     assertGe(lendingPool.collateralBalance(borrower), requiredCollateral, "Collateralization with bonus not handled correctly");
 
 }
-Description: The contract uses minCollateralRatio for collateralization checks in the borrow function but does not clearly define how this ratio interacts with the collateralizationBonus.
+```
+### Description: 
+The contract uses minCollateralRatio for collateralization checks in the borrow function but does not clearly define how this ratio interacts with the collateralizationBonus.
 
-Recommendation: Clarify the interaction between collateralization ratio and bonus, ensuring both are effectively utilized in loan security.
+### Recommendation: 
+Clarify the interaction between collateralization ratio and bonus, ensuring both are effectively utilized in loan security.
 
-Resolution: Revise the collateralization check to incorporate both the minimum ratio and the bonus, providing clearer guidelines for their application.
+### Resolution: 
+Revise the collateralization check to incorporate both the minimum ratio and the bonus, providing clearer guidelines for their application.
 
-H-01 Unrestricted Collateral Allowance Management
+## H-01 Unrestricted Collateral Allowance Management
 
-Location: Functions addCollateralAllowance and removeCollateralAllowance
+**Location:** Functions addCollateralAllowance and removeCollateralAllowance
 
-PoC:
-
+### PoC:
+``` solidity 
 function testExcessiveCollateralAllowance() public {
 uint256 excessiveAllowance = 100000 ether;
 
@@ -433,32 +453,37 @@ uint256 excessiveAllowance = 100000 ether;
     assertLt(lendingPool.collateralAllowance(borrower), excessiveAllowance, "Excessive collateral allowance set");
 
 }
-Description: The addCollateralAllowance function allows a trustedCollateralManager to set collateral allowances without any upper limits, potentially leading to misuse or management errors.
+```
+### Description:
+The addCollateralAllowance function allows a trustedCollateralManager to set collateral allowances without any upper limits, potentially leading to misuse or management errors.
 
-Recommendation: Implement limits or additional checks on the allowances that can be set by collateral managers.
+### Recommendation:
+Implement limits or additional checks on the allowances that can be set by collateral managers.
 
-Resolution: Modify the addCollateralAllowance function to include checks or caps on the collateral allowance that can be set.
+### Resolution: 
+Modify the addCollateralAllowance function to include checks or caps on the collateral allowance that can be set.
 
-C-01Lack of Liquidation Mechanism
+## C-01 Lack of Liquidation Mechanism
 
-Location: Entire Contract (Affects overall contract functionality)
+**Location:** Entire Contract (Affects overall contract functionality)
 
-PoC: Since the contract lacks a liquidation function, a hypothetical test can be proposed.
+### Description: 
+The contract does not include a mechanism to handle situations where the collateral value falls below a required threshold, which is a significant risk for a lending platform.
 
-Description: The contract does not include a mechanism to handle situations where the collateral value falls below a required threshold, which is a significant risk for a lending platform.
+### Recommendation: 
+Develop and integrate a liquidation mechanism to manage risks associated with collateral value fluctuations.
 
-Recommendation: Develop and integrate a liquidation mechanism to manage risks associated with collateral value fluctuations.
+### Resolution: 
+Implement a function or process that triggers liquidation or collateral adjustment when its value drops below a certain level.
 
-Resolution: Implement a function or process that triggers liquidation or collateral adjustment when its value drops below a certain level.
+## M-03 Inadequate Control Over Collateral Managers
 
-M-03 Inadequate Control Over Collateral Managers
-
-Location: Functions addCollateralManager and
+**Location:** Functions addCollateralManager and
 
 removeCollateralManager
 
-PoC:
-
+### PoC:
+``` solidity 
 function testMultipleCollateralManagers() public {
 
     address additionalManager = address(3);
@@ -469,8 +494,12 @@ function testMultipleCollateralManagers() public {
     assertTrue(lendingPool.trustedCollateralManagers(additionalManager), "Failed to add additional collateral manager");
 
 }
-Description: The contract lacks sufficient controls or restrictions over the number and actions of trustedCollateralManagers, potentially leading to centralization or mismanagement issues.
+```
+### Description: 
+The contract lacks sufficient controls or restrictions over the number and actions of trustedCollateralManagers, potentially leading to centralization or mismanagement issues.
 
-Recommendation: Introduce stricter controls or limitations on the appointment and actions of collateral managers.
+### Recommendation: 
+Introduce stricter controls or limitations on the appointment and actions of collateral managers.
 
-Resolution: Enhance the functions related to collateral managers with additional checks, limits, or governance mechanisms.
+### Resolution: 
+Enhance the functions related to collateral managers with additional checks, limits, or governance mechanisms.
